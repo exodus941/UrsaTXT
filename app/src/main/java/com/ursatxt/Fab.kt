@@ -68,7 +68,9 @@ class Squircle(private val c: Context, var fill: Int, var stroke: Int = 0, priva
 class Glow(c: Context, private val sizeDp: Float) : View(c) {
     private val spread = c.dp(16f)          // Yeetlist: inset -16px
     private val blur = c.dp(32f)            // Yeetlist: blur 32px
-    private val pad = spread + blur * 2
+    // How far the glow reaches past the button: Yeetlist's 16 + 2 × 32 = 80 dp, half again
+    // (their call, 3 November 2026, with the inverse-square falloff): 120 dp.
+    private val pad = (spread + blur * 2) * 1.5f
     private var mask: Bitmap? = null
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private val turn = Matrix()
@@ -91,17 +93,32 @@ class Glow(c: Context, private val sizeDp: Float) : View(c) {
     private val STRENGTH = 0.45f
     private val PULSE_S = 2f
 
+    /**
+     * The glow as light from the button's edge: full at the edge, then 1 / (1 + (d / core)²)
+     * by the distance d out from it, rescaled to reach nothing at [pad], core a quarter of
+     * that, as the pie's glow in UrsaPDF. Distance is measured on the squircle's own curve.
+     */
     private fun build() {
         val s = context.dp(sizeDp)
         val full = (s + 2 * pad).toInt()
-        fun draw(bg: Int, fg: Int) = Bitmap.createBitmap(full, full, Bitmap.Config.ARGB_8888).also { bm ->
-            val cv = Canvas(bm)
-            cv.drawColor(bg)
-            val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = fg; maskFilter = BlurMaskFilter(blur, BlurMaskFilter.Blur.NORMAL) }
-            cv.drawPath(squirclePath(pad - spread, pad - spread, s + 2 * spread, s + 2 * spread), p)
+        val half = s / 2f
+        val c = full / 2f
+        val core = 0.25f
+        val edge = 1f / (1f + (1f / core) * (1f / core))
+        val dark = IntArray(full * full); val light = IntArray(full * full)
+        for (y in 0 until full) for (x in 0 until full) {
+            val nx = kotlin.math.abs(x + 0.5f - c) / half; val ny = kotlin.math.abs(y + 0.5f - c) / half
+            val r = Math.pow(nx.toDouble().pow(4) + ny.toDouble().pow(4), 0.25).toFloat()
+            val u = ((r - 1f) * half / pad).coerceIn(0f, 1f)
+            val q = u / core
+            val k = ((1f / (1f + q * q) - edge) / (1f - edge)).coerceIn(0f, 1f)
+            val g = (255 * k).toInt()
+            dark[y * full + x] = (0xFF shl 24) or (g shl 16) or (g shl 8) or g
+            val w = 255 - g
+            light[y * full + x] = (0xFF shl 24) or (w shl 16) or (w shl 8) or w
         }
-        mask = draw(0xFF000000.toInt(), 0xFFFFFFFF.toInt())       // the glow white on black
-        lightMask = draw(0xFFFFFFFF.toInt(), 0xFF000000.toInt())  // and black on white
+        mask = Bitmap.createBitmap(dark, full, full, Bitmap.Config.ARGB_8888)       // white on black
+        lightMask = Bitmap.createBitmap(light, full, full, Bitmap.Config.ARGB_8888) // black on white
     }
 
     private fun mix(a: Int, b: Int, t: Float): Int {

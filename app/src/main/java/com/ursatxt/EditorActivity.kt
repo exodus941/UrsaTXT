@@ -101,8 +101,14 @@ class EditorActivity : Activity() {
         web.evaluateJavascript("back()", null)
     }
 
+    override fun onResume() {
+        super.onResume()
+        Updater.resumed(this, home = false)
+    }
+
     override fun onPause() {
         super.onPause()
+        Updater.paused(this)
         if (::web.isInitialized && !gone) web.evaluateJavascript("save({ now: true })", null)
     }
 
