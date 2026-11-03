@@ -89,12 +89,12 @@ class Menu(private val a: Activity, private val host: View) {
         gravity = Gravity.CENTER_VERTICAL
         tag = r
         val trails = r.mark != null || r.remove != null
-        setPadding(a.dpi(if (r.icon != null) 16 else 20), a.dpi(if (r.remove != null) 0 else 12), a.dpi(if (r.remove != null) 4 else if (r.mark != null) 16 else 24), a.dpi(if (r.remove != null) 0 else 12))
+        setPadding(a.dpi(if (iconOf(r) != null) 16 else 20), a.dpi(if (r.remove != null) 0 else 12), a.dpi(if (r.remove != null) 4 else if (r.mark != null) 16 else 24), a.dpi(if (r.remove != null) 0 else 12))
         if (trails) minimumWidth = a.dpi(200)
         iconOf(r)?.let { addView(ImageView(a).apply { setImageResource(it); tag = "icon" }, LinearLayout.LayoutParams(a.dpi(22), a.dpi(22))) }
         addView(a.label(r.text, 15f, Theme.text()).apply {
             tag = "text"
-            if (r.icon != null) setPadding(a.dpi(16), 0, 0, 0)
+            if (iconOf(r) != null) setPadding(a.dpi(16), 0, 0, 0)
         }, if (trails) LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f) else LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
         // The mark's slot is kept when empty, so the labels of a pick list line up.
         if (r.mark != null) addView(ImageView(a).apply { tag = "mark" }, LinearLayout.LayoutParams(a.dpi(24), a.dpi(24)).apply { marginStart = a.dpi(16) })
