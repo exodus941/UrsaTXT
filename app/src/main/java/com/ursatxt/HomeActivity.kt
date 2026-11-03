@@ -599,10 +599,10 @@ class HomeActivity : Activity() {
     private fun fabInsets(end: Int, bottom: Int) {
         val m = resources.displayMetrics
         val gap = maxOf(dpi(24), (minOf(m.widthPixels, m.heightPixels) * 0.065f).toInt())
-        // Sideways it shares the cards' column of ⋮ buttons: each ⋮ is centred 28 dp in from
-        // its card's edge and the + is 56 dp wide, so centring on them puts its right edge on
-        // the cards' right edge, 16 dp in. Only the bottom scales with the screen.
-        fabEnd = end + dpi(16); fabBottom = bottom + gap
+        // Sideways it stays clear of the cards' ⋮ buttons: each is a 48 dp target whose right
+        // edge is 20 dp from the screen's (16 dp card inset + 4 dp), so the + ends 8 dp to its
+        // left, 76 dp in. Only the bottom gap scales with the screen.
+        fabEnd = end + dpi(16 + 4 + 48 + 8); fabBottom = bottom + gap
         fabRoom = gap + dpi(56) + dpi(16)
         val reach = glow.reach()
         (fab.layoutParams as FrameLayout.LayoutParams).apply { marginEnd = fabEnd; bottomMargin = fabBottom; rightMargin = fabEnd }

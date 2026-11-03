@@ -111,7 +111,9 @@ class Glow(c: Context, private val sizeDp: Float) : View(c) {
             val r = Math.pow(nx.toDouble().pow(4) + ny.toDouble().pow(4), 0.25).toFloat()
             val u = ((r - 1f) * half / pad).coerceIn(0f, 1f)
             val q = u / core
-            val k = ((1f / (1f + q * q) - edge) / (1f - edge)).coerceIn(0f, 1f)
+            // The tail eases to nothing, (1 - u²)², so no step shows where the glow ends.
+            val tail = (1f - u * u).let { it * it }
+            val k = (((1f / (1f + q * q) - edge) / (1f - edge)) * tail).coerceIn(0f, 1f)
             val g = (255 * k).toInt()
             dark[y * full + x] = (0xFF shl 24) or (g shl 16) or (g shl 8) or g
             val w = 255 - g
