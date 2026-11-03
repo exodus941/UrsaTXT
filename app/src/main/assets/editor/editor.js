@@ -89,6 +89,7 @@ function save({ now = false } = {}) {
 /* Back from the app: close whatever is open first, else save and leave. */
 function back() {
   if (!$('modal').hidden) { closeModal(); return true; }
+  if (menuOpen && menuBackTo) { const to = menuBackTo; menuBackTo = null; closeMenu(); setTimeout(to, 0); return true; }
   if (menuOpen) { closeMenu(); return true; }
   if (!$('huePop').hidden) { hueOpen(false); return true; }
   if ($('findBar').dataset.open !== undefined) { closeFind(); return true; }
@@ -298,10 +299,13 @@ function freshTasks() {
 
 let menuOpen = null;
 let menuTimer = null;
+/* Where Back goes from a menu that replaced another, as Share replaces the ⋮ menu. */
+let menuBackTo = null;
 
 function openMenu(anchor, items, { align = 'start' } = {}) {
   const list = $('menu');
   if (menuOpen === anchor) { closeMenu(); return; }
+  menuBackTo = null;
   clearTimeout(menuTimer);
   list.innerHTML = '';
   for (const item of items) {
@@ -419,13 +423,17 @@ $('noteOptions').addEventListener('click', (e) => {
 });
 
 function shareMenu(anchor) {
+  const options = () => $('noteOptions').click();
+  // Every row carries an icon, so the labels line up under Return's.
   openMenu(anchor, [
-    { label: 'MD', act: () => { const n = current(); bridge.exportNote('md', `${fileName(n.title)}.md`, n.md); } },
-    { label: 'HTML', act: () => { const n = current(); bridge.exportNote('html', `${fileName(n.title)}.html`, noteToHtmlPage(n.title, n.md)); } },
-    { label: 'TXT', act: () => { const n = current(); bridge.exportNote('txt', `${fileName(n.title)}.txt`, markdownToText(n.md)); } },
-    { label: 'Copy to Clipboard', act: () => { const n = current(); bridge.copy(n.md.trim(), n.title); } },
-    { label: 'External', act: () => { const n = current(); bridge.share(n.md.trim(), n.title); } },
+    { label: 'Return', icon: 'back', act: () => setTimeout(options, 0) },
+    { label: 'MD', icon: 'download', act: () => { const n = current(); bridge.exportNote('md', `${fileName(n.title)}.md`, n.md); } },
+    { label: 'HTML', icon: 'download', act: () => { const n = current(); bridge.exportNote('html', `${fileName(n.title)}.html`, noteToHtmlPage(n.title, n.md)); } },
+    { label: 'TXT', icon: 'download', act: () => { const n = current(); bridge.exportNote('txt', `${fileName(n.title)}.txt`, markdownToText(n.md)); } },
+    { label: 'Copy to Clipboard', icon: 'copy', act: () => { const n = current(); bridge.copy(n.md.trim(), n.title); } },
+    { label: 'External', icon: 'share', act: () => { const n = current(); bridge.share(n.md.trim(), n.title); } },
   ], { align: 'end' });
+  menuBackTo = options;
 }
 
 function askDelete() {

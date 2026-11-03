@@ -439,6 +439,7 @@ class HomeActivity : Activity() {
             Menu.Row("Check for Updates", icon = R.drawable.ic_refresh) { Updater.check(this) },
         )
         val at = IntArray(2).also { anchor.getLocationInWindow(it) }
+        menuBack = null
         menu.show(rows, Gravity.TOP or Gravity.END, dpi(12), at[1])
     }
 
@@ -455,6 +456,7 @@ class HomeActivity : Activity() {
             way(true, "Ascending"), way(false, "Descending"),
         )
         val at = IntArray(2).also { anchor.getLocationInWindow(it) }
+        menuBack = null
         menu.show(rows, Gravity.TOP or Gravity.END, dpi(60), at[1])
     }
 
@@ -468,6 +470,9 @@ class HomeActivity : Activity() {
             },
             Menu.Row("Rename", icon = R.drawable.ic_rename) { rename(e) },
             Menu.Row("Move/Copy", icon = R.drawable.ic_copy) { moveCopy(e) },
+        ) + (if (e.dir) emptyList() else listOf(
+            Menu.Row("Share", icon = R.drawable.ic_share) { shareMenu(anchor, e) },
+        )) + listOf(
             Menu.Row("Delete", icon = R.drawable.ic_delete) {
                 val what = if (e.dir) "“${e.name}” and everything in it will be deleted from this device." else "“${e.name}” will be deleted from this device."
                 modal.confirm("Delete $kind?", "$what This cannot be undone.", "Delete") {
@@ -476,7 +481,56 @@ class HomeActivity : Activity() {
             },
         )
         val at = IntArray(2).also { anchor.getLocationInWindow(it) }
+        menuBack = null
         menu.show(rows, Gravity.TOP or Gravity.END, dpi(12), at[1])
+    }
+
+    /** Where Back goes from a menu that replaced another; null closes it. */
+    private var menuBack: (() -> Unit)? = null
+    private val convert by lazy { Convert(this) }
+
+    /**
+     * The card menu's place taken by the editor's share menu, the same formats and
+     * words. Return, or the Back button, puts the card menu back.
+     */
+    private fun shareMenu(anchor: View, e: Notes.Entry) {
+        val back = { cardMenu(anchor, e) }
+        fun md() = try { e.file.readText() } catch (_: Exception) { "" }
+        fun file(ext: String) = "${e.name.replace(Regex("[\\\\/:*?\"<>|]"), " ").trim().take(60).ifEmpty { "Untitled note" }}.$ext"
+        fun save(name: String, mime: String, text: String) {
+            val ok = saveAndShare(name, mime) { it.write(text.toByteArray()) }
+            note(if (ok) "Saved “$name” to Downloads" else "Couldn’t save “$name” to Downloads")
+        }
+        val rows = listOf(
+            Menu.Row("Return", icon = R.drawable.ic_back) { back() },
+            Menu.Row("MD", icon = R.drawable.ic_download) { save(file("md"), "text/markdown", md()) },
+            Menu.Row("HTML", icon = R.drawable.ic_download) {
+                convert.run("noteToHtmlPage", e.name, md()) { save(file("html"), "text/html", it) }
+            },
+            Menu.Row("TXT", icon = R.drawable.ic_download) {
+                convert.run("markdownToText", md()) { save(file("txt"), "text/plain", it) }
+            },
+            Menu.Row("Copy to Clipboard", icon = R.drawable.ic_copy) {
+                val text = md().trim()
+                getSystemService(android.content.ClipboardManager::class.java)
+                    .setPrimaryClip(android.content.ClipData.newPlainText(e.name, text))
+                note("Note copied to clipboard")
+                sendText(text, e.name)
+            },
+            Menu.Row("External", icon = R.drawable.ic_share) { sendText(md().trim(), e.name) },
+        )
+        val at = IntArray(2).also { anchor.getLocationInWindow(it) }
+        menu.show(rows, Gravity.TOP or Gravity.END, dpi(12), at[1])
+        menuBack = back
+    }
+
+    private fun sendText(text: String, title: String) {
+        val i = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+            putExtra(Intent.EXTRA_SUBJECT, title)
+        }
+        startActivity(Intent.createChooser(i, null))
     }
 
     private fun rename(e: Notes.Entry) {
@@ -784,6 +838,7 @@ class HomeActivity : Activity() {
     override fun onBackPressed() {
         val t = tree
         when {
+            menu.showing && menuBack != null -> { val b = menuBack!!; menuBack = null; menu.dismiss(); b() }
             menu.showing -> menu.dismiss()
             modal.showing && t != null && t.editing -> t.stopEditing()
             modal.showing -> { modal.cancel(); tree = null }
@@ -840,7 +895,7 @@ class HomeActivity : Activity() {
             val texts = box.findViewWithTag<LinearLayout>("texts")
             val head = texts.getChildAt(0) as LinearLayout
             (head.getChildAt(0) as TextView).text = e.name
-            head.getChildAt(1).visibility = if (e.pinned) View.VISIBLE else View.GONE
+            box.findViewWithTag<View>("pin").visibility = if (e.pinned) View.VISIBLE else View.GONE
             if (e.dir) {
                 val parts = ArrayList<String>()
                 parts += if (e.notes == 1) "1 note" else "${e.notes} notes"
@@ -880,8 +935,6 @@ class HomeActivity : Activity() {
             val head = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
             head.addView(label("", 16f, Theme.text(), bold = true).apply { maxLines = 1; ellipsize = TextUtils.TruncateAt.END },
                 LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-            head.addView(ImageView(context).apply { setImageResource(R.drawable.ic_pin); tag = "pin" },
-                LinearLayout.LayoutParams(dpi(16), dpi(16)).apply { marginStart = dpi(8) })
             texts.addView(head)
             if (folder) {
                 texts.addView(label("", 12f, Theme.sub()).apply { setPadding(0, dpi(2), 0, 0) })
@@ -890,6 +943,10 @@ class HomeActivity : Activity() {
                 texts.addView(label("", 12f, Theme.sub()).apply { maxLines = 1; ellipsize = TextUtils.TruncateAt.END; setPadding(0, dpi(6), 0, 0); tag = "date" })
             }
             box.addView(texts, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+            // A pin, when pinned: the ⋮ glyph's 24 dp, centred on the same line, its glyph 12 dp
+            // from the ⋮ glyph (the ⋮ carries 12 dp of padding inside its 48 dp target).
+            box.addView(ImageView(context).apply { setImageResource(R.drawable.ic_pin); tag = "pin"; contentDescription = "Pinned" },
+                LinearLayout.LayoutParams(dpi(24), dpi(24)).apply { marginStart = dpi(8) })
             box.addView(ImageView(context).apply {
                 setImageResource(R.drawable.ic_more)
                 background = ripple()
@@ -918,7 +975,7 @@ class HomeActivity : Activity() {
         val texts = box.findViewWithTag<LinearLayout>("texts")
         val head = texts.getChildAt(0) as LinearLayout
         (head.getChildAt(0) as TextView).setTextColor(Theme.text())
-        (head.getChildAt(1) as ImageView).setColorFilter(Theme.accentInk())
+        box.findViewWithTag<ImageView>("pin").setColorFilter(Theme.accentInk())
         for (i in 1 until texts.childCount) (texts.getChildAt(i) as TextView).setTextColor(Theme.sub())
         box.findViewWithTag<ImageView>("more").apply {
             setColorFilter(Theme.sub())

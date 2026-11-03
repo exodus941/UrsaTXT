@@ -103,7 +103,7 @@ class Glow(c: Context, private val sizeDp: Float) : View(c) {
         val full = (s + 2 * pad).toInt()
         val half = s / 2f
         val c = full / 2f
-        val core = 0.5f      // half the reach: a gentler fall than the pie's quarter
+        val core = 0.2f      // a fifth of the reach: bright only close to the button (0.5 read as a pillow)
         val edge = 1f / (1f + (1f / core) * (1f / core))
         val dark = IntArray(full * full); val light = IntArray(full * full)
         for (y in 0 until full) for (x in 0 until full) {
