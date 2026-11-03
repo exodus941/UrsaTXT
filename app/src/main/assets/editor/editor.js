@@ -15,7 +15,7 @@ const LEVELS = [
 
 const bridge = window.Ursa || {
   load: () => JSON.stringify({ name: '', named: false, md: '# Hello\n\nA note.', hue: 24, zoom: 100, light: false }),
-  save() {}, setHue() {}, setZoom() {}, exportNote() {}, copy() {}, share() {}, deleteNote() {}, done() {},
+  save() {}, setHue() {}, setZoom() {}, setLight() {}, exportNote() {}, copy() {}, share() {}, deleteNote() {}, done() {},
 };
 
 let note = null;
@@ -310,12 +310,25 @@ function openMenu(anchor, items, { align = 'start' } = {}) {
     li.setAttribute('role', item.checked === undefined ? 'menuitem' : 'menuitemradio');
     if (item.checked !== undefined) li.setAttribute('aria-checked', String(item.checked));
     if (item.danger) li.classList.add('danger');
-    if (item.icon) {
+    // A switch draws its toggle as the icon and keeps the menu open when pressed.
+    const icon = () => (item.on ? (item.on() ? 'toggle-on' : 'toggle-off') : item.icon);
+    if (icon()) {
       li.classList.add('has-icon');
-      li.innerHTML = `<svg><use href="#i-${item.icon}"/></svg>`;
+      li.innerHTML = `<svg><use href="#i-${icon()}"/></svg>`;
+      if (item.on) { li.classList.add('switch'); li.classList.toggle('on', item.on()); }
     }
     li.append(document.createTextNode(item.label));
-    li.addEventListener('click', (e) => { e.stopPropagation(); closeMenu(); item.act(); });
+    li.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (item.on) {
+        item.act();
+        li.querySelector('use').setAttribute('href', `#i-${icon()}`);
+        li.classList.toggle('on', item.on());
+        return;
+      }
+      closeMenu();
+      item.act();
+    });
     list.append(li);
   }
   list.hidden = false;
@@ -388,18 +401,34 @@ function current() {
   return { md, title };
 }
 
-$('noteGet').addEventListener('click', (e) => {
+/* The ⋮ menu: Dark Mode, Share and Delete. Share swaps the menu for the formats. */
+function setLight(light) {
+  document.documentElement.dataset.theme = light ? 'light' : 'dark';
+  note.light = light;
+  bridge.setLight(light);
+}
+
+$('noteOptions').addEventListener('click', (e) => {
   e.stopPropagation();
-  openMenu(e.currentTarget, [
+  const anchor = e.currentTarget;
+  openMenu(anchor, [
+    { label: 'Dark Mode', on: () => !note.light, act: () => setLight(!note.light) },
+    { label: 'Share', icon: 'share', act: () => setTimeout(() => shareMenu(anchor), 0) },
+    { label: 'Delete', icon: 'trash', act: askDelete },
+  ], { align: 'end' });
+});
+
+function shareMenu(anchor) {
+  openMenu(anchor, [
     { label: 'MD', act: () => { const n = current(); bridge.exportNote('md', `${fileName(n.title)}.md`, n.md); } },
     { label: 'HTML', act: () => { const n = current(); bridge.exportNote('html', `${fileName(n.title)}.html`, noteToHtmlPage(n.title, n.md)); } },
     { label: 'TXT', act: () => { const n = current(); bridge.exportNote('txt', `${fileName(n.title)}.txt`, markdownToText(n.md)); } },
     { label: 'Copy to Clipboard', act: () => { const n = current(); bridge.copy(n.md.trim(), n.title); } },
     { label: 'External', act: () => { const n = current(); bridge.share(n.md.trim(), n.title); } },
   ], { align: 'end' });
-});
+}
 
-$('noteDelete').addEventListener('click', () => {
+function askDelete() {
   const n = current();
   modal({
     title: 'Delete note?',
@@ -407,7 +436,7 @@ $('noteDelete').addEventListener('click', () => {
     ok: 'Delete',
     onOk: () => { clearTimeout(saveTimer); bridge.deleteNote(); },
   });
-});
+}
 
 $('noteBack').addEventListener('click', leave);
 

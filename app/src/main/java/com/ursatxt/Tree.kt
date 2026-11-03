@@ -48,6 +48,25 @@ class Tree(private val a: Activity, private val root: File, private val moving: 
 
     init { add(root, 0, box.childCount) }
 
+    private val guide = android.graphics.Paint().apply { strokeWidth = a.dp(1f) }
+
+    /**
+     * A row that draws a faint vertical line through each level above it, through the
+     * centre of that level's folder icon, so the lines run on down a branch and show
+     * which folder a row sits in.
+     */
+    private inner class Guided(private val depth: Int) : LinearLayout(a) {
+        init { setWillNotDraw(false) }
+        override fun dispatchDraw(c: android.graphics.Canvas) {
+            super.dispatchDraw(c)
+            guide.color = Theme.line()
+            for (l in 0 until depth) {
+                val x = a.dp(8f + 20f * l + 10f)
+                c.drawLine(x, 0f, x, height.toFloat(), guide)
+            }
+        }
+    }
+
     /** [f]'s row and its sub-folders' rows, from [at] in the list. Returns the next index. */
     private fun add(f: File, depth: Int, at: Int, animate: Boolean = false): Int {
         val row = folderRow(f, depth)
@@ -70,7 +89,7 @@ class Tree(private val a: Activity, private val root: File, private val moving: 
     /** A folder cannot go into itself or a folder inside it. */
     private fun allowed(f: File) = Notes.canGo(moving, f)
 
-    private fun folderRow(f: File, depth: Int) = LinearLayout(a).apply {
+    private fun folderRow(f: File, depth: Int) = Guided(depth).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
         tag = f
@@ -98,7 +117,7 @@ class Tree(private val a: Activity, private val root: File, private val moving: 
         (row.foreground as? RippleDrawable)?.setColor(ColorStateList.valueOf(Theme.ripple()))
     }
 
-    private fun pick(f: File) {
+    fun pick(f: File) {
         if (picked == f && create != null) return
         stopEditing()
         picked?.let { rows[it]?.let { r -> paintRow(r, false) } }
@@ -113,7 +132,7 @@ class Tree(private val a: Activity, private val root: File, private val moving: 
         onPick()
     }
 
-    private fun createRow(depth: Int) = LinearLayout(a).apply {
+    private fun createRow(depth: Int) = Guided(depth).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
         tag = "create"

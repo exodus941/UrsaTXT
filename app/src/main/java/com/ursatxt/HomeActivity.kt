@@ -39,6 +39,12 @@ import java.util.Locale
 
 class HomeActivity : Activity() {
 
+    private companion object {
+        /** The path strip's height and the gap under it, in dp. */
+        const val CRUMB_H = 48
+        const val CRUMB_GAP = 16
+    }
+
     private val pickZip = 1
     private val openNote = 2
     private val askFiles = 3
@@ -191,12 +197,16 @@ class HomeActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
+        // A strip with its own fill, 48 dp tall like the search box, with a 16 dp gap under
+        // it so a press on a crumb cannot land on search.
         crumbScroll = HorizontalScrollView(context).apply {
             isHorizontalScrollBarEnabled = false
-            addView(crumbs, FrameLayout.LayoutParams(WRAP_CONTENT, dpi(40)))
+            setPadding(dpi(4), 0, dpi(4), 0)
+            clipToPadding = false
+            addView(crumbs, FrameLayout.LayoutParams(WRAP_CONTENT, dpi(CRUMB_H)))
         }
         crumbBox = FrameLayout(context).apply { clipChildren = true; clipToPadding = true }
-        crumbBox.addView(crumbScroll, FrameLayout.LayoutParams(MATCH_PARENT, dpi(40), Gravity.BOTTOM))
+        crumbBox.addView(crumbScroll, FrameLayout.LayoutParams(MATCH_PARENT, dpi(CRUMB_H), Gravity.TOP))
         addView(crumbBox, LinearLayout.LayoutParams(MATCH_PARENT, 0))
 
         searchBox = LinearLayout(context).apply {
@@ -238,7 +248,7 @@ class HomeActivity : Activity() {
         val h = sticky.height
         if (spacer.layoutParams.height != h) { spacer.layoutParams.height = h; spacer.requestLayout() }
         // Room under the last card for the + button, so it never hides it.
-        list.setPadding(0, 0, 0, bottomInset + dpi(96))
+        list.setPadding(0, 0, 0, bottomInset + fabRoom)
         topFade.translationY = h.toFloat()
         empty.translationY = h + dp(24f)
         val fadeH = dpi(48) + bottomInset
@@ -321,15 +331,17 @@ class HomeActivity : Activity() {
             crumbs.addView(label(if (d == r) "Root" else d.name, 14f, Theme.sub(), bold = true).apply {
                 tag = if (k == chain.size - 1) "here" else "crumb"
                 background = ripple()
-                setPadding(dpi(8), dpi(10), dpi(8), dpi(10))
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dpi(12), 0, dpi(12), 0)
                 setOnClickListener { go(d) }
-            })
+            }, LinearLayout.LayoutParams(WRAP_CONTENT, dpi(CRUMB_H)))
         }
         paintCrumbs()
         crumbScroll.post { crumbScroll.fullScroll(View.FOCUS_RIGHT) }
     }
 
     private fun paintCrumbs() {
+        crumbScroll.background = pill(Theme.card(), 14f)
         for (i in 0 until crumbs.childCount) {
             val v = crumbs.getChildAt(i)
             when (v.tag) {
@@ -345,14 +357,15 @@ class HomeActivity : Activity() {
     private fun showCrumbs(show: Boolean) {
         val lp = crumbBox.layoutParams as LinearLayout.LayoutParams
         val from = lp.height
-        val to = if (show) dpi(48) else 0
+        val full = dpi(CRUMB_H + CRUMB_GAP)
+        val to = if (show) full else 0
         crumbAnim?.cancel()
         crumbAnim = ValueAnimator.ofInt(from, to).apply {
             duration = Motion.MS
             interpolator = if (show) Motion.IN else Motion.OUT
             addUpdateListener {
                 lp.height = it.animatedValue as Int
-                crumbScroll.alpha = lp.height / dp(48f)
+                crumbScroll.alpha = lp.height / full.toFloat()
                 crumbBox.requestLayout()
             }
             start()
@@ -412,11 +425,11 @@ class HomeActivity : Activity() {
 
     private fun mainMenu(anchor: View) {
         val rows = listOf(
-            Menu.Row("Dark Mode", icon = if (Theme.light) R.drawable.ic_toggle_off else R.drawable.ic_toggle_on) {
+            Menu.Row("Dark Mode", on = { !Theme.light }) {
                 Theme.toggle(this)
                 note(if (Theme.light) "Dark Mode off" else "Dark Mode on")
             },
-            Menu.Row("Folders First", icon = if (foldersFirst) R.drawable.ic_toggle_on else R.drawable.ic_toggle_off) {
+            Menu.Row("Folders First", on = { foldersFirst }) {
                 foldersFirst = !foldersFirst
                 refresh()
                 note(if (foldersFirst) "Folders First on" else "Folders First off")
@@ -511,6 +524,8 @@ class HomeActivity : Activity() {
             }
             copy.alpha = 0.38f; move.alpha = 0.38f; copy.isEnabled = false; move.isEnabled = false
             t.onPick = { enable() }
+            // The tree opens on the folder the item is in, with Create New Folder Here under it.
+            t.pick(e.file.parentFile ?: Notes.root(this))
         }
     }
 
@@ -553,7 +568,7 @@ class HomeActivity : Activity() {
             content.addView(t, FrameLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, Gravity.BOTTOM or Gravity.END))
             content.addView(b, FrameLayout.LayoutParams(dpi(44), dpi(44), Gravity.BOTTOM or Gravity.END))
         }
-        upBtn = small(R.drawable.ic_folder_up, "Up a folder") { up() }.apply { alpha = 0f; visibility = View.INVISIBLE }
+        upBtn = small(R.drawable.ic_up, "Up a folder") { up() }.apply { alpha = 0f; visibility = View.INVISIBLE }
         content.addView(upBtn, FrameLayout.LayoutParams(dpi(44), dpi(44), Gravity.BOTTOM or Gravity.END))
 
         // The squircle stays put; only the + inside it turns to an ×.
@@ -571,12 +586,21 @@ class HomeActivity : Activity() {
         paintFab()
     }
 
+    private var fabRoom = 0
     private var fabEnd = 0
     private var fabBottom = 0
 
-    /** 16 dp from the screen's end and bottom, past the system bars. */
+    /**
+     * Off the screen's end and bottom by 6.5% of its shorter side, never under 24 dp,
+     * past the system bars. A share of the screen, not a fixed dp: at a high display
+     * density a fixed 16 dp sat almost on the corner. The list keeps room under its last
+     * card for the button, so it never covers a card's ⋮.
+     */
     private fun fabInsets(end: Int, bottom: Int) {
-        fabEnd = end + dpi(16); fabBottom = bottom + dpi(16)
+        val m = resources.displayMetrics
+        val gap = maxOf(dpi(24), (minOf(m.widthPixels, m.heightPixels) * 0.065f).toInt())
+        fabEnd = end + gap; fabBottom = bottom + gap
+        fabRoom = gap + dpi(56) + dpi(16)
         val reach = glow.reach()
         (fab.layoutParams as FrameLayout.LayoutParams).apply { marginEnd = fabEnd; bottomMargin = fabBottom; rightMargin = fabEnd }
         (glow.layoutParams as FrameLayout.LayoutParams).apply { marginEnd = fabEnd - reach; rightMargin = fabEnd - reach; bottomMargin = fabBottom - reach }
@@ -660,10 +684,12 @@ class HomeActivity : Activity() {
         if (!::fab.isInitialized) return
         fabIcon.setColorFilter(BG)
         (fab.foreground as? RippleDrawable)?.setColor(ColorStateList.valueOf(0x33000000))
+        // The up button is grey: it moves you, it makes nothing.
         for (b in dial.map { it.first } + upBtn) {
-            (b.background as Squircle).apply { fill = Theme.bg(); stroke = Theme.accentInk() }
+            val ink = if (b === upBtn) Theme.sub() else Theme.accentInk()
+            (b.background as Squircle).apply { fill = Theme.bg(); stroke = ink }
             b.background.invalidateSelf()
-            b.setColorFilter(Theme.accentInk())
+            b.setColorFilter(ink)
             (b.foreground as? RippleDrawable)?.setColor(ColorStateList.valueOf(Theme.ripple()))
         }
         for ((_, t) in dial) {

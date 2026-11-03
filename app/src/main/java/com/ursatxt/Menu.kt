@@ -27,8 +27,13 @@ class Menu(private val a: Activity, private val host: View) {
      */
     class Row(
         val text: String, val icon: Int? = null, val mark: (() -> Int?)? = null, val stay: Boolean = false,
-        val remove: (() -> Unit)? = null, val act: () -> Unit,
+        val remove: (() -> Unit)? = null,
+        /** A switch: its leading icon is a toggle drawn from this, and a tap keeps the menu open. */
+        val on: (() -> Boolean)? = null,
+        val act: () -> Unit,
     )
+
+    private fun iconOf(r: Row): Int? = r.on?.let { if (it()) R.drawable.ic_toggle_on else R.drawable.ic_toggle_off } ?: r.icon
 
     companion object {
         /** A thin rule between two groups of rows. */
@@ -86,7 +91,7 @@ class Menu(private val a: Activity, private val host: View) {
         val trails = r.mark != null || r.remove != null
         setPadding(a.dpi(if (r.icon != null) 16 else 20), a.dpi(if (r.remove != null) 0 else 12), a.dpi(if (r.remove != null) 4 else if (r.mark != null) 16 else 24), a.dpi(if (r.remove != null) 0 else 12))
         if (trails) minimumWidth = a.dpi(200)
-        r.icon?.let { addView(ImageView(a).apply { setImageResource(it); tag = "icon" }, LinearLayout.LayoutParams(a.dpi(22), a.dpi(22))) }
+        iconOf(r)?.let { addView(ImageView(a).apply { setImageResource(it); tag = "icon" }, LinearLayout.LayoutParams(a.dpi(22), a.dpi(22))) }
         addView(a.label(r.text, 15f, Theme.text()).apply {
             tag = "text"
             if (r.icon != null) setPadding(a.dpi(16), 0, 0, 0)
@@ -102,7 +107,7 @@ class Menu(private val a: Activity, private val host: View) {
                 setOnClickListener { rm(); drop(this@row) }
             }, LinearLayout.LayoutParams(a.dpi(48), a.dpi(48)).apply { marginStart = a.dpi(8) })
         }
-        setOnClickListener { if (!r.stay) dismiss(); r.act(); paint() }
+        setOnClickListener { if (!r.stay && r.on == null) dismiss(); r.act(); paint() }
     }
 
     private fun emptyView(text: String) = a.label(text, 15f, Theme.sub()).apply {
@@ -160,7 +165,9 @@ class Menu(private val a: Activity, private val host: View) {
             if (v.background == null) v.background = a.ripple()
             (v.background as? android.graphics.drawable.RippleDrawable)?.setColor(android.content.res.ColorStateList.valueOf(Theme.ripple()))
             v.findViewWithTag<TextView>("text").setTextColor(Theme.text())
-            v.findViewWithTag<ImageView>("icon")?.setColorFilter(when (r.icon) { R.drawable.ic_toggle_on -> Theme.accentInk(); R.drawable.ic_toggle_off -> Theme.sub(); else -> Theme.text() })
+            val ic = iconOf(r)
+            if (r.on != null && ic != null) v.findViewWithTag<ImageView>("icon")?.setImageResource(ic)
+            v.findViewWithTag<ImageView>("icon")?.setColorFilter(when (ic) { R.drawable.ic_toggle_on -> Theme.accentInk(); R.drawable.ic_toggle_off -> Theme.sub(); else -> Theme.text() })
             v.findViewWithTag<ImageView>("remove")?.let { m ->
                 m.setColorFilter(Theme.sub())
                 if (m.background == null) m.background = a.ripple()

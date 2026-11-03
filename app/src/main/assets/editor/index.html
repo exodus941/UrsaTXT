@@ -25,6 +25,9 @@
   <symbol id="i-chevron-up" viewBox="0 0 24 24"><path d="M6 15l6 -6l6 6"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6l-12 12 M6 6l12 12"/></symbol>
   <symbol id="i-zoom-in" viewBox="0 0 24 24"><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0 M7 10l6 0 M10 7l0 6 M21 21l-6 -6"/></symbol>
+  <symbol id="i-dots-v" viewBox="0 0 24 24"><path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0 M12 19m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0 M12 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/></symbol>
+  <symbol id="i-toggle-on" viewBox="0 0 24 24"><path d="M16 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M2 6m0 6a6 6 0 0 1 6 -6h8a6 6 0 0 1 6 6v0a6 6 0 0 1 -6 6h-8a6 6 0 0 1 -6 -6z"/></symbol>
+  <symbol id="i-toggle-off" viewBox="0 0 24 24"><path d="M8 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M2 6m0 6a6 6 0 0 1 6 -6h8a6 6 0 0 1 6 6v0a6 6 0 0 1 -6 6h-8a6 6 0 0 1 -6 -6z"/></symbol>
 </svg>
 
 <section id="noteEditor" class="note-editor" aria-label="Note editor">
@@ -36,8 +39,7 @@
     <p id="noteState" class="note-state" role="status">Saved</p>
     <button id="noteFind" class="btn icon" type="button" aria-label="Search this note"><svg><use href="#i-search"/></svg></button>
     <button id="noteHue" class="btn icon" type="button" aria-label="Note colour"><span id="noteSwatch" class="note-swatch" aria-expanded="false"></span></button>
-    <button id="noteGet"class="btn icon" type="button" aria-label="Share this note"><svg><use href="#i-share"/></svg></button>
-    <button id="noteDelete" class="btn icon" type="button" aria-label="Delete this note"><svg><use href="#i-trash"/></svg></button>
+    <button id="noteOptions" class="btn icon" type="button" aria-label="Note options" aria-haspopup="menu"><svg><use href="#i-dots-v"/></svg></button>
   </header>
 
   <div class="note-tools" role="toolbar" aria-label="Formatting">

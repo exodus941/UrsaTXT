@@ -84,7 +84,15 @@ class EditorActivity : Activity() {
         }
         setContentView(frame)
         Theme.applyBars(window)
+        Theme.listeners += onTheme
         web.loadUrl("file:///android_asset/editor/index.html")
+    }
+
+    // The bars and the edges round the page follow a theme switch frame by frame.
+    private val onTheme: () -> Unit = {
+        frame.setBackgroundColor(Theme.bg())
+        window.decorView.setBackgroundColor(Theme.bg())
+        Theme.applyBars(window)
     }
 
     @Deprecated("Deprecated in Java")
@@ -99,6 +107,7 @@ class EditorActivity : Activity() {
     }
 
     override fun onDestroy() {
+        Theme.listeners -= onTheme
         if (::web.isInitialized) { web.removeJavascriptInterface("Ursa"); web.destroy() }
         super.onDestroy()
     }
@@ -137,6 +146,12 @@ class EditorActivity : Activity() {
 
         @JavascriptInterface
         fun setHue(h: Int) { file?.let { Notes.setHue(this@EditorActivity, it, h) } }
+
+        /** The app's own Dark Mode, so the list matches when the note closes. */
+        @JavascriptInterface
+        fun setLight(light: Boolean) = runOnUiThread {
+            if (Theme.light != light) Theme.toggle(this@EditorActivity)
+        }
 
         @JavascriptInterface
         fun setZoom(z: Int) { getSharedPreferences("ursa", MODE_PRIVATE).edit().putInt("zoom", z).apply() }
