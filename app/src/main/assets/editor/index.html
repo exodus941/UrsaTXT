@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UrsaTXT editor</title>
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!-- Tabler Icons 3.19.0, outline, MIT. -->
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M5 12l14 0 M5 12l6 6 M5 12l6 -6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0 M21 21l-6 -6"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M6 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0 M18 6m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0 M18 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0 M8.7 10.7l6.6 -3.4 M8.7 13.3l6.6 3.4"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7l16 0 M10 11l0 6 M14 11l0 6 M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12 M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/></symbol>
+  <symbol id="i-bold" viewBox="0 0 24 24"><path d="M7 5h6a3.5 3.5 0 0 1 0 7h-6z M13 12h1a3.5 3.5 0 0 1 0 7h-7v-7"/></symbol>
+  <symbol id="i-italic" viewBox="0 0 24 24"><path d="M11 5l6 0 M7 19l6 0 M14 5l-4 14"/></symbol>
+  <symbol id="i-strike" viewBox="0 0 24 24"><path d="M5 12l14 0 M16 6.5a4 2 0 0 0 -4 -1.5h-1a3.5 3.5 0 0 0 0 7h2a3.5 3.5 0 0 1 0 7h-1.5a4 2 0 0 1 -4 -1.5"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="M7 8l-4 4l4 4 M17 8l4 4l-4 4 M14 4l-4 16"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M9 15l6 -6 M11 6l.463 -.536a5 5 0 0 1 7.071 7.072l-.534 .464 M13 18l-.397 .534a5.068 5.068 0 0 1 -7.127 0a4.972 4.972 0 0 1 0 -7.071l.524 -.463"/></symbol>
+  <symbol id="i-bullets" viewBox="0 0 24 24"><path d="M9 6l11 0 M9 12l11 0 M9 18l11 0 M5 6l0 .01 M5 12l0 .01 M5 18l0 .01"/></symbol>
+  <symbol id="i-numbers" viewBox="0 0 24 24"><path d="M11 6h9 M11 12h9 M12 18h8 M4 16a2 2 0 1 1 4 0c0 .591 -.5 1 -1 1.5l-3 2.5h4 M6 10v-6l-2 2"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><path d="M5 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0 M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0 M19 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6l6 -6"/></symbol>
+  <symbol id="i-chevron-up" viewBox="0 0 24 24"><path d="M6 15l6 -6l6 6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6l-12 12 M6 6l12 12"/></symbol>
+  <symbol id="i-zoom-in" viewBox="0 0 24 24"><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0 M7 10l6 0 M10 7l0 6 M21 21l-6 -6"/></symbol>
+</svg>
+
+<section id="noteEditor" class="note-editor" aria-label="Note editor">
+  <header class="note-bar">
+    <button id="noteBack" class="btn icon" type="button" aria-label="Close the note"><svg><use href="#i-back"/></svg></button>
+    <div class="note-name">
+      <input id="noteTitle" class="note-title" type="text" aria-label="Note title" placeholder="Untitled note" autocomplete="off" spellcheck="false">
+    </div>
+    <p id="noteState" class="note-state" role="status">Saved</p>
+    <button id="noteFind" class="btn icon" type="button" aria-label="Search this note"><svg><use href="#i-search"/></svg></button>
+    <button id="noteHue" class="btn icon" type="button" aria-label="Note colour"><span id="noteSwatch" class="note-swatch" aria-expanded="false"></span></button>
+    <button id="noteGet"class="btn icon" type="button" aria-label="Share this note"><svg><use href="#i-share"/></svg></button>
+    <button id="noteDelete" class="btn icon" type="button" aria-label="Delete this note"><svg><use href="#i-trash"/></svg></button>
+  </header>
+
+  <div class="note-tools" role="toolbar" aria-label="Formatting">
+    <button class="drop" id="noteLevelTrigger" type="button" aria-haspopup="menu">
+      <span id="noteLevelValue">Body</span><svg class="chev"><use href="#i-chevron-down"/></svg>
+    </button>
+    <button class="btn icon note-tool" type="button" data-mark="bold" aria-label="Bold" aria-pressed="false"><svg><use href="#i-bold"/></svg></button>
+    <button class="btn icon note-tool" type="button" data-mark="italic" aria-label="Italic" aria-pressed="false"><svg><use href="#i-italic"/></svg></button>
+    <button class="btn icon" id="noteMore" type="button" aria-label="More formatting" aria-haspopup="menu" aria-pressed="false"><svg><use href="#i-dots"/></svg></button>
+    <button class="btn icon note-tool" type="button" data-mark="bullets" aria-label="Bulleted list" aria-pressed="false"><svg><use href="#i-bullets"/></svg></button>
+    <button class="btn icon note-tool" type="button" data-mark="numbers" aria-label="Numbered list" aria-pressed="false"><svg><use href="#i-numbers"/></svg></button>
+    <button class="drop" id="noteZoomTrigger" type="button" aria-haspopup="menu" aria-label="Text size">
+      <span id="noteZoomValue">100%</span><svg class="chev"><use href="#i-chevron-down"/></svg>
+    </button>
+  </div>
+
+  <div id="findBar" class="find-bar" aria-hidden="true">
+    <div class="find-inner">
+      <div class="find-box">
+        <svg class="find-icon"><use href="#i-search"/></svg>
+        <input id="findInput" type="search" placeholder="Search this note" autocomplete="off" spellcheck="false" enterkeyhint="search">
+        <span id="findCount" class="find-count"></span>
+      </div>
+      <button id="findPrev" class="btn icon" type="button" aria-label="Previous match"><svg><use href="#i-chevron-up"/></svg></button>
+      <button id="findNext" class="btn icon" type="button" aria-label="Next match"><svg><use href="#i-chevron-down"/></svg></button>
+      <button id="findClose" class="btn icon" type="button" aria-label="Close search"><svg><use href="#i-x"/></svg></button>
+    </div>
+  </div>
+
+  <div id="noteScroll" class="note-scroll">
+    <div id="noteBody" class="note-body" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Note text" spellcheck="true"></div>
+  </div>
+</section>
+
+<!-- One floating menu, filled by whichever control opened it. -->
+<ul id="menu" class="menu" role="menu" hidden></ul>
+
+<div id="huePop" class="hue-pop" role="dialog" aria-label="Note colour" hidden>
+  <div id="hueGrid" class="hue-grid" role="radiogroup"></div>
+</div>
+
+<div id="modal" class="modal" hidden>
+  <div class="scrim"></div>
+  <div class="card" role="dialog">
+    <h2 id="modalTitle"></h2>
+    <p id="modalText"></p>
+    <input id="modalField" type="text" autocomplete="off" spellcheck="false">
+    <div class="actions">
+      <button id="modalCancel" type="button">Cancel</button>
+      <button id="modalOk" class="ok" type="button">OK</button>
+    </div>
+  </div>
+</div>
+
+<script src="notes.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>

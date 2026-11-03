@@ -1,0 +1,7 @@
+{
+  "name": "ursatxt",
+  "private": true,
+  "scripts": {
+    "check": "node tools/syntax-guard.mjs"
+  }
+}
