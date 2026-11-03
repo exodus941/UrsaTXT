@@ -103,13 +103,16 @@ class Glow(c: Context, private val sizeDp: Float) : View(c) {
         val full = (s + 2 * pad).toInt()
         val half = s / 2f
         val c = full / 2f
-        val core = 0.25f
+        val core = 0.5f      // half the reach: a gentler fall than the pie's quarter
         val edge = 1f / (1f + (1f / core) * (1f / core))
         val dark = IntArray(full * full); val light = IntArray(full * full)
         for (y in 0 until full) for (x in 0 until full) {
-            val nx = kotlin.math.abs(x + 0.5f - c) / half; val ny = kotlin.math.abs(y + 0.5f - c) / half
-            val r = Math.pow(nx.toDouble().pow(4) + ny.toDouble().pow(4), 0.25).toFloat()
-            val u = ((r - 1f) * half / pad).coerceIn(0f, 1f)
+            // Distance out from a rounded square near the squircle, so the glow's contours
+            // are round rather than the squircle's own squarish curve.
+            val rr = half * 0.6f
+            val px = kotlin.math.abs(x + 0.5f - c) - (half - rr); val py = kotlin.math.abs(y + 0.5f - c) - (half - rr)
+            val d = kotlin.math.hypot(maxOf(px, 0f), maxOf(py, 0f)) + minOf(maxOf(px, py), 0f) - rr
+            val u = (d / pad).coerceIn(0f, 1f)
             val q = u / core
             // The tail eases to nothing, (1 - u²)², so no step shows where the glow ends.
             val tail = (1f - u * u).let { it * it }

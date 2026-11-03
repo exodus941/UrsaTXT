@@ -591,19 +591,17 @@ class HomeActivity : Activity() {
     private var fabBottom = 0
 
     /**
-     * Off the screen's end and bottom by 6.5% of its shorter side, never under 24 dp,
-     * past the system bars. A share of the screen, not a fixed dp: at a high display
-     * density a fixed 16 dp sat almost on the corner. The list keeps room under its last
-     * card for the button, so it never covers a card's ⋮.
+     * Where the + sits, from the cards' ⋮ column rather than a fixed corner gap. The list
+     * keeps room under its last card for the button, so it never covers a card's ⋮.
      */
     private fun fabInsets(end: Int, bottom: Int) {
-        val m = resources.displayMetrics
-        val gap = maxOf(dpi(24), (minOf(m.widthPixels, m.heightPixels) * 0.065f).toInt())
         // Sideways it stays clear of the cards' ⋮ buttons: each is a 48 dp target whose right
         // edge is 20 dp from the screen's (16 dp card inset + 4 dp), so the + ends 8 dp to its
-        // left, 76 dp in. Only the bottom gap scales with the screen.
-        fabEnd = end + dpi(16 + 4 + 48 + 8); fabBottom = bottom + gap
-        fabRoom = gap + dpi(56) + dpi(16)
+        // left, 76 dp in.
+        // The same 76 dp from the bottom as from the right edge, or 16 dp over the
+        // navigation bar where that is taller.
+        fabEnd = end + dpi(16 + 4 + 48 + 8); fabBottom = maxOf(dpi(76), bottom + dpi(16))
+        fabRoom = fabBottom - bottom + dpi(56) + dpi(16)
         val reach = glow.reach()
         (fab.layoutParams as FrameLayout.LayoutParams).apply { marginEnd = fabEnd; bottomMargin = fabBottom; rightMargin = fabEnd }
         (glow.layoutParams as FrameLayout.LayoutParams).apply { marginEnd = fabEnd - reach; rightMargin = fabEnd - reach; bottomMargin = fabBottom - reach }
