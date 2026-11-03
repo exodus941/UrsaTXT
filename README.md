@@ -1,22 +1,29 @@
+<img src="docs/icon.svg" width="128" height="128" alt="UrsaTXT icon: a black bear head over a box reading TXT, on amber">
+
 # UrsaTXT
 
-A small Android notebook. Each note is a markdown file in `Documents/UrsaTXT`, in folders you make. It is UrsaPDF's sibling and looks and moves the same.
+A small, 'bear minimum' notebook for Android 8+. Every note is a markdown file in `Documents/UrsaTXT`, in folders you make. No libraries beyond the Kotlin standard library in the app itself; it is UrsaPDF's sibling and looks and moves the same.
 
-## What it does
+- Home: notes and folders as cards, each with a colour strip on its edge. A note shows its first two lines and when it was last opened; a folder shows how many notes and folders it holds. A name and text search (filters as you type, through the folders below too) stays pinned at the top; a soft shadow shows where the list runs under it or off the screen. The app's version sits beside its name.
+- Each card's ⋮ menu pins it (a pinned note stays at the top), renames it, moves or copies it, or deletes it. **Move/Copy** shows the folder tree from Root; pick a folder and **Create New Folder Here** opens under it, to name a new folder in place (Enter keeps it, Back drops it).
+- The sort icon picks Name, Date Accessed, Date Added or Size, ascending or descending; Date Accessed, newest first, is the default. The ⋮ menu holds **Dark Mode**, **Folders First** (on by default), **Export Notes**, **Import Notes** and **Check for Updates** (updates also install themselves from the latest release here).
+- The + button, with a slow amber pulse, opens **New Note** and **New Folder**. Inside a folder, a button above it goes up a folder, Back does the same, and a path strip under the title bar jumps to any folder above.
+- Editor: Yeetlist's. Body text, six heading levels and code blocks from a dropdown; bold, italic and lists on the bar; strikethrough, code and links under the dots button. "- ", "1. " and "[ ] " start lists and task lists. A note with no name takes its first line when closed. The colour square picks one of sixteen strip colours, the text size runs from 50% to 200%, and search marks every match in amber.
+- Share a note as MD, HTML or TXT (saved to Downloads too), copy it to the clipboard, or send it to another app.
+- Backup: **Export Notes** packs every note and folder into one zip in Downloads and opens the share sheet; **Import Notes** reads one back, and a note whose name is taken arrives beside it as "Name (2)".
+- Storage: Android 11 and newer ask for All files access to keep notes in `Documents/UrsaTXT`. Until it is allowed, notes stay in the app's own folder and move over the first time it is. Colours, pins and dates sit in `.ursatxt.json` there.
 
-- **Notes and folders as cards.** A folder shows how many notes it holds. A note shows its first two lines and when you last opened it. Each card carries a colour strip on its edge.
-- **Pin, Rename, Move/Copy, Delete** from each card's ⋮ menu. A pinned note stays at the top. Move/Copy opens the folder tree, and you can make a new folder in it as you go.
-- **Sort** by Name, Date Accessed, Date Added or Size, ascending or descending. The default is Date Accessed, newest first.
-- **Search** note names and text in the current folder and the folders under it.
-- **The + button** opens New Note and New Folder. Inside a folder, a button above it goes up a folder, and a path strip under the title bar takes you to any folder above.
-- **The editor** is Yeetlist's: headings, bold, italic, strikethrough, code, links, lists and task lists, written to the file as markdown. It also has a colour picker, text size from 50% to 200%, and a search that marks matches in amber.
-- **Share a note** as MD, HTML or TXT, copy it to the clipboard, or send it to another app.
-- **Export Notes** packs every note and folder into a zip in Downloads and opens the share sheet. **Import Notes** reads one back. A note whose name is taken arrives beside it as "Name (2)".
-- **Dark Mode** and **Folders First** (on by default) in the ⋮ menu, and **Check for Updates** from GitHub releases.
+## Build
 
-## Storage
+```
+./gradlew assembleRelease
+```
 
-The notes live in `Documents/UrsaTXT` once you allow file access. Android 11 and newer ask for All files access for that. Until you allow it, notes stay in the app's own folder, and they move to `Documents/UrsaTXT` the first time access is on. Colours, pins and dates sit in `.ursatxt.json` in that folder.
+Release signing reads `URSA_KS_PATH` and `URSA_KS_PASS` from the environment or from `keystore.properties` (not in git).
+
+## Release
+
+Push a tag `vX.Y.Z`. The workflow builds a signed APK, attaches it to a GitHub release and deletes every older release, so only the newest exists.
 
 ## Credits
 
